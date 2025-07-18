@@ -1,0 +1,132 @@
+<!DOCTYPE html><html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gestión Streaming con Supabase</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      margin: 0; font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #4a90e2, #9013fe);
+      background-size: cover;
+      background-position: center;
+      min-height: 100vh;
+      color: #fff;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(0,0,0,0.8);
+      padding: 40px 30px;
+      border-radius: 12px;
+      max-width: 1000px;
+      margin: auto;
+      box-sizing: border-box;
+    }
+    h1 { margin-top: 0; text-align: center; }
+    .botonera { text-align: center; margin-bottom: 20px; }
+    .botonera button {
+      background-color: #4a90e2;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      margin: 0 5px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+    .botonera button:hover { background-color: #357ABD; }
+    .botonera button.active {
+      background-color: #f9a825;
+      color: black;
+      font-weight: bold;
+    }
+    section { display: none; margin-top: 15px; }
+    section.active { display: block; }
+    input, button, textarea, select {
+      padding: 8px; margin: 5px; border-radius: 5px; border: none;
+      font-size: 14px; box-sizing: border-box;
+    }
+    textarea { resize: vertical; }
+    button.agregar {
+      background-color: #f9a825; color: black; font-weight: bold; cursor: pointer;
+    }
+    button.agregar:hover { background-color: #d4af37; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 10px; color: #fff;
+    }
+    th, td {
+      padding: 8px; border-bottom: 1px solid #ccc; text-align: left;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Gestión de Cuentas Streaming</h1>
+  <div class="botonera">
+    <button onclick="mostrarSeccion('cuentas', this)" class="active">Cuentas</button>
+    <button onclick="mostrarSeccion('expiran', this)">Cuentas por Expirar</button>
+    <button onclick="mostrarSeccion('clientes', this)">Clientes</button>
+    <button onclick="mostrarSeccion('proveedores', this)">Proveedores</button>
+  </div>
+  <section id="cuentas" class="active">
+    <h2>Cuentas Vigentes</h2>
+    <input id="nombre" placeholder="Servicio" />
+    <input id="cliente_id" placeholder="Cliente ID" />
+    <input type="date" id="vencimiento" />
+    <input id="correo" placeholder="Correo" />
+    <input id="contrasena" placeholder="Contraseña" />
+    <button class="agregar" onclick="agregarCuenta()">Agregar Cuenta</button>
+    <table id="tablaCuentas">
+      <thead><tr><th>Servicio</th><th>Cliente ID</th><th>Vence</th><th>Correo</th><th>Contraseña</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+  <section id="expiran">
+    <h2>Cuentas por Expirar</h2>
+    <table id="tablaExpiran">
+      <thead><tr><th>Servicio</th><th>Cliente ID</th><th>Vence</th><th>Correo</th><th>Contraseña</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+  <section id="clientes">
+    <h2>Clientes</h2>
+    <ul id="listaClientes"></ul>
+  </section>
+  <section id="proveedores">
+    <h2>Proveedores</h2>
+    <input id="provNombre" placeholder="Nombre" />
+    <input id="provServicio" placeholder="Servicio" />
+    <textarea id="provNota" placeholder="Nota"></textarea>
+    <button class="agregar" onclick="agregarProveedor()">Agregar Proveedor</button>
+    <table id="tablaProveedores">
+      <thead><tr><th>Nombre</th><th>Servicio</th><th>Nota</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</div>
+<script>
+const supabase = supabase.createClient(
+  'https://fkcnhfgzfrqhyhprksji.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrY25oZmd6ZnJxaHlocHJrc2ppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NjMwODMsImV4cCI6MjA2ODQzOTA4M30.M_CPiBiCVjR5WeZ3iKKI3gwEJZ3CHTOeQteXZB627aM'
+);function mostrarSeccion(id, boton) { document.querySelectorAll('section').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.botonera button').forEach(b => b.classList.remove('active')); boton.classList.add('active'); }
+
+async function agregarCuenta() { const nombre = document.getElementById('nombre').value; const cliente_id = document.getElementById('cliente_id').value; const vencimiento = document.getElementById('vencimiento').value; const correo = document.getElementById('correo').value; const contrasena = document.getElementById('contrasena').value;
+
+const { data, error } = await supabase.from('cuentas').insert([ { nombre, cliente_id, vencimiento, correo, contrasena } ]);
+
+if (error) { alert('Error: ' + error.message); } else { alert('Cuenta agregada'); cargarCuentas(); } }
+
+async function agregarProveedor() { const nombre = document.getElementById('provNombre').value; const servicio = document.getElementById('provServicio').value; const nota = document.getElementById('provNota').value;
+
+const { error } = await supabase.from('proveedores').insert([ { nombre, servicio, nota } ]);
+
+if (error) { alert('Error: ' + error.message); } else { alert('Proveedor agregado'); cargarProveedores(); } }
+
+async function cargarCuentas() { const { data, error } = await supabase.from('cuentas').select('*'); const cuerpo = document.querySelector('#tablaCuentas tbody'); cuerpo.innerHTML = ''; if (data) { data.forEach(c => { cuerpo.innerHTML += <tr><td>${c.nombre}</td><td>${c.cliente_id}</td><td>${c.vencimiento}</td><td>${c.correo}</td><td>${c.contrasena}</td></tr>; }); } }
+
+async function cargarProveedores() { const { data, error } = await supabase.from('proveedores').select('*'); const cuerpo = document.querySelector('#tablaProveedores tbody'); cuerpo.innerHTML = ''; if (data) { data.forEach(p => { cuerpo.innerHTML += <tr><td>${p.nombre}</td><td>${p.servicio}</td><td>${p.nota}</td></tr>; }); } }
+
+window.onload = () => { cargarCuentas(); cargarProveedores(); }; </script>
+
+</body>
+</html>
