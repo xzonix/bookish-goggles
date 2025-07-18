@@ -1,8 +1,9 @@
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Gestión Streaming con Supabase</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <title>Gestión Streaming con Login y Supabase</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       margin: 0; font-family: Arial, sans-serif;
@@ -57,17 +58,49 @@
     th, td {
       padding: 8px; border-bottom: 1px solid #ccc; text-align: left;
     }
+    #loginContainer {
+      max-width: 350px;
+      margin: 100px auto;
+      background: rgba(0,0,0,0.85);
+      padding: 30px;
+      border-radius: 15px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    #loginContainer input {
+      width: 90%;
+      margin-bottom: 15px;
+      font-size: 16px;
+      color: #000;
+    }
+    #loginContainer button {
+      width: 95%;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
-<div class="container">
+
+<!-- LOGIN -->
+<div id="loginContainer">
+  <h2>Iniciar Sesión</h2>
+  <input type="text" id="loginUser" placeholder="Usuario" autocomplete="username" />
+  <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password" />
+  <button onclick="login()">Entrar</button>
+</div>
+
+<!-- PANEL PRINCIPAL -->
+<div id="app" class="container" style="display:none;">
+
   <h1>Gestión de Cuentas Streaming</h1>
+
   <div class="botonera">
-    <button onclick="mostrarSeccion('cuentas', this)" class="active">Cuentas</button>
-    <button onclick="mostrarSeccion('expiran', this)">Cuentas por Expirar</button>
-    <button onclick="mostrarSeccion('clientes', this)">Clientes</button>
-    <button onclick="mostrarSeccion('proveedores', this)">Proveedores</button>
+    <button id="btnCuentas" class="active" onclick="mostrarSeccion('cuentas', this)">Cuentas Vigentes</button>
+    <button id="btnExpiran" onclick="mostrarSeccion('expiran', this)">Cuentas por Expirar</button>
+    <button id="btnClientes" onclick="mostrarSeccion('clientes', this)">Clientes</button>
+    <button id="btnProveedores" onclick="mostrarSeccion('proveedores', this)">Proveedores</button>
   </div>
+
   <section id="cuentas" class="active">
     <h2>Cuentas Vigentes</h2>
     <input id="nombre" placeholder="Servicio" />
@@ -76,57 +109,263 @@
     <input id="correo" placeholder="Correo" />
     <input id="contrasena" placeholder="Contraseña" />
     <button class="agregar" onclick="agregarCuenta()">Agregar Cuenta</button>
+
     <table id="tablaCuentas">
       <thead><tr><th>Servicio</th><th>Cliente ID</th><th>Vence</th><th>Correo</th><th>Contraseña</th></tr></thead>
       <tbody></tbody>
     </table>
   </section>
+
   <section id="expiran">
-    <h2>Cuentas por Expirar</h2>
+    <h2>Cuentas por Expirar (Próximos 5 días)</h2>
     <table id="tablaExpiran">
       <thead><tr><th>Servicio</th><th>Cliente ID</th><th>Vence</th><th>Correo</th><th>Contraseña</th></tr></thead>
       <tbody></tbody>
     </table>
   </section>
+
   <section id="clientes">
     <h2>Clientes</h2>
     <ul id="listaClientes"></ul>
   </section>
+
   <section id="proveedores">
     <h2>Proveedores</h2>
     <input id="provNombre" placeholder="Nombre" />
     <input id="provServicio" placeholder="Servicio" />
     <textarea id="provNota" placeholder="Nota"></textarea>
     <button class="agregar" onclick="agregarProveedor()">Agregar Proveedor</button>
+
     <table id="tablaProveedores">
       <thead><tr><th>Nombre</th><th>Servicio</th><th>Nota</th></tr></thead>
       <tbody></tbody>
     </table>
   </section>
+
 </div>
+
 <script>
-const supabase = supabase.createClient(
-  'https://fkcnhfgzfrqhyhprksji.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrY25oZmd6ZnJxaHlocHJrc2ppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NjMwODMsImV4cCI6MjA2ODQzOTA4M30.M_CPiBiCVjR5WeZ3iKKI3gwEJZ3CHTOeQteXZB627aM'
-);function mostrarSeccion(id, boton) { document.querySelectorAll('section').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.botonera button').forEach(b => b.classList.remove('active')); boton.classList.add('active'); }
+  // Inicializar Supabase
+  const supabase = supabase.createClient(
+    'https://fkcnhfgzfrqhyhprksji.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrY25oZmd6ZnJxaHlocHJrc2ppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NjMwODMsImV4cCI6MjA2ODQzOTA4M30.M_CPiBiCVjR5WeZ3iKKI3gwEJZ3CHTOeQteXZB627aM'
+  );
 
-async function agregarCuenta() { const nombre = document.getElementById('nombre').value; const cliente_id = document.getElementById('cliente_id').value; const vencimiento = document.getElementById('vencimiento').value; const correo = document.getElementById('correo').value; const contrasena = document.getElementById('contrasena').value;
+  let usuarioLogeado = null;
 
-const { data, error } = await supabase.from('cuentas').insert([ { nombre, cliente_id, vencimiento, correo, contrasena } ]);
+  // Mostrar sección activa
+  function mostrarSeccion(id, boton) {
+    document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.botonera button').forEach(b => b.classList.remove('active'));
+    if(boton) boton.classList.add('active');
+  }
 
-if (error) { alert('Error: ' + error.message); } else { alert('Cuenta agregada'); cargarCuentas(); } }
+  // Login: consulta la tabla usuarios en Supabase
+  async function login() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value;
 
-async function agregarProveedor() { const nombre = document.getElementById('provNombre').value; const servicio = document.getElementById('provServicio').value; const nota = document.getElementById('provNota').value;
+    if (!user || !pass) {
+      alert('Completa usuario y contraseña');
+      return;
+    }
 
-const { error } = await supabase.from('proveedores').insert([ { nombre, servicio, nota } ]);
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('id, usuario, contraseña, rol')
+      .eq('usuario', user)
+      .eq('contraseña', pass)
+      .limit(1)
+      .maybeSingle();
 
-if (error) { alert('Error: ' + error.message); } else { alert('Proveedor agregado'); cargarProveedores(); } }
+    if (error) {
+      alert('Error al consultar usuarios: ' + error.message);
+      return;
+    }
 
-async function cargarCuentas() { const { data, error } = await supabase.from('cuentas').select('*'); const cuerpo = document.querySelector('#tablaCuentas tbody'); cuerpo.innerHTML = ''; if (data) { data.forEach(c => { cuerpo.innerHTML += <tr><td>${c.nombre}</td><td>${c.cliente_id}</td><td>${c.vencimiento}</td><td>${c.correo}</td><td>${c.contrasena}</td></tr>; }); } }
+    if (!data) {
+      alert('Usuario o contraseña incorrectos');
+      return;
+    }
 
-async function cargarProveedores() { const { data, error } = await supabase.from('proveedores').select('*'); const cuerpo = document.querySelector('#tablaProveedores tbody'); cuerpo.innerHTML = ''; if (data) { data.forEach(p => { cuerpo.innerHTML += <tr><td>${p.nombre}</td><td>${p.servicio}</td><td>${p.nota}</td></tr>; }); } }
+    // Login exitoso
+    usuarioLogeado = data.usuario;
+    localStorage.setItem('usuarioLogeado', usuarioLogeado);
+    localStorage.setItem('rolLogeado', data.rol);
 
-window.onload = () => { cargarCuentas(); cargarProveedores(); }; </script>
+    document.getElementById('loginContainer').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    cargarTodo();
+  }
+
+  // Al cargar la página, chequea si ya hay sesión guardada
+  window.onload = () => {
+    const sesion = localStorage.getItem('usuarioLogeado');
+    if (sesion) {
+      usuarioLogeado = sesion;
+      document.getElementById('loginContainer').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      cargarTodo();
+    }
+  };
+
+  // Funciones para cargar datos y mostrar en tablas / listas
+
+  async function cargarCuentas() {
+    const { data, error } = await supabase.from('cuentas').select('*').order('vencimiento', { ascending: true });
+    if (error) {
+      alert('Error al cargar cuentas: ' + error.message);
+      return;
+    }
+    const tbody = document.querySelector('#tablaCuentas tbody');
+    tbody.innerHTML = '';
+    data.forEach(c => {
+      tbody.innerHTML += `<tr>
+        <td>${c.nombre}</td>
+        <td>${c.cliente_id}</td>
+        <td>${c.vencimiento}</td>
+        <td>${c.correo}</td>
+        <td>${c.contrasena}</td>
+      </tr>`;
+    });
+  }
+
+  async function cargarExpiran() {
+    const hoy = new Date();
+    const cincoDias = new Date();
+    cincoDias.setDate(hoy.getDate() + 5);
+    // Supabase no tiene operadores directos para fechas en el cliente, se filtra en JS
+    const { data, error } = await supabase.from('cuentas').select('*');
+    if (error) {
+      alert('Error al cargar cuentas por expirar: ' + error.message);
+      return;
+    }
+    const expiran = data.filter(c => {
+      const ven = new Date(c.vencimiento);
+      return ven >= hoy && ven <= cincoDias;
+    });
+
+    const tbody = document.querySelector('#tablaExpiran tbody');
+    tbody.innerHTML = '';
+    if (expiran.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay cuentas por expirar en 5 días</td></tr>`;
+      return;
+    }
+
+    expiran.forEach(c => {
+      tbody.innerHTML += `<tr>
+        <td>${c.nombre}</td>
+        <td>${c.cliente_id}</td>
+        <td>${c.vencimiento}</td>
+        <td>${c.correo}</td>
+        <td>${c.contrasena}</td>
+      </tr>`;
+    });
+  }
+
+  async function cargarClientes() {
+    const { data, error } = await supabase.from('clientes').select('*').order('nombre');
+    if (error) {
+      alert('Error al cargar clientes: ' + error.message);
+      return;
+    }
+    const ul = document.getElementById('listaClientes');
+    ul.innerHTML = '';
+    data.forEach(c => {
+      const li = document.createElement('li');
+      li.textContent = c.nombre;
+      ul.appendChild(li);
+    });
+  }
+
+  async function cargarProveedores() {
+    const { data, error } = await supabase.from('proveedores').select('*').order('nombre');
+    if (error) {
+      alert('Error al cargar proveedores: ' + error.message);
+      return;
+    }
+    const tbody = document.querySelector('#tablaProveedores tbody');
+    tbody.innerHTML = '';
+    data.forEach(p => {
+      tbody.innerHTML += `<tr>
+        <td>${p.nombre}</td>
+        <td>${p.servicio}</td>
+        <td>${p.nota}</td>
+      </tr>`;
+    });
+  }
+
+  // Funciones para agregar datos
+
+  async function agregarCuenta() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const cliente_id = document.getElementById('cliente_id').value.trim();
+    const vencimiento = document.getElementById('vencimiento').value;
+    const correo = document.getElementById('correo').value.trim();
+    const contrasena = document.getElementById('contrasena').value.trim();
+
+    if (!nombre || !cliente_id || !vencimiento || !correo || !contrasena) {
+      alert('Completa todos los campos para agregar cuenta');
+      return;
+    }
+
+    const { error } = await supabase.from('cuentas').insert([{ nombre, cliente_id, vencimiento, correo, contrasena }]);
+    if (error) {
+      alert('Error al agregar cuenta: ' + error.message);
+    } else {
+      alert('Cuenta agregada con éxito');
+      limpiarInputsCuenta();
+      cargarTodo();
+    }
+  }
+
+  async function agregarProveedor() {
+    const nombre = document.getElementById('provNombre').value.trim();
+    const servicio = document.getElementById('provServicio').value.trim();
+    const nota = document.getElementById('provNota').value.trim();
+
+    if (!nombre || !servicio) {
+      alert('Completa nombre y servicio para agregar proveedor');
+      return;
+    }
+
+    const { error } = await supabase.from('proveedores').insert([{ nombre, servicio, nota }]);
+    if (error) {
+      alert('Error al agregar proveedor: ' + error.message);
+    } else {
+      alert('Proveedor agregado con éxito');
+      limpiarInputsProveedor();
+      cargarTodo();
+    }
+  }
+
+  // Limpieza de inputs
+
+  function limpiarInputsCuenta() {
+    document.getElementById('nombre').value = '';
+    document.getElementById('cliente_id').value = '';
+    document.getElementById('vencimiento').value = '';
+    document.getElementById('correo').value = '';
+    document.getElementById('contrasena').value = '';
+  }
+
+  function limpiarInputsProveedor() {
+    document.getElementById('provNombre').value = '';
+    document.getElementById('provServicio').value = '';
+    document.getElementById('provNota').value = '';
+  }
+
+  // Cargar todo junto
+
+  async function cargarTodo() {
+    await cargarCuentas();
+    await cargarExpiran();
+    await cargarClientes();
+    await cargarProveedores();
+  }
+</script>
 
 </body>
 </html>
