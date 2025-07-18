@@ -13,6 +13,7 @@
       min-height: 100vh;
       color: #fff;
       padding: 20px;
+      transition: background-image 0.5s ease;
     }
     .container {
       background: rgba(0,0,0,0.8);
@@ -22,8 +23,11 @@
       margin: auto;
       box-sizing: border-box;
     }
-    h1 { margin-top: 0; text-align: center; }
-    .botonera { text-align: center; margin-bottom: 20px; }
+    h1 { margin-top: 0; text-align: center;}
+    .botonera {
+      text-align: center;
+      margin-bottom: 20px;
+    }
     .botonera button {
       background-color: #4a90e2;
       border: none;
@@ -35,29 +39,47 @@
       font-size: 16px;
       transition: background-color 0.3s ease;
     }
-    .botonera button:hover { background-color: #357ABD; }
+    .botonera button:hover {
+      background-color: #357ABD;
+    }
     .botonera button.active {
       background-color: #f9a825;
       color: black;
       font-weight: bold;
     }
-    section { display: none; margin-top: 15px; }
-    section.active { display: block; }
+    section {
+      display: none;
+      margin-top: 15px;
+    }
+    section.active {
+      display: block;
+    }
     input, button, textarea, select {
       padding: 8px; margin: 5px; border-radius: 5px; border: none;
-      font-size: 14px; box-sizing: border-box;
+      font-size: 14px;
+      box-sizing: border-box;
     }
-    textarea { resize: vertical; }
+    textarea {
+      resize: vertical;
+    }
     button.agregar {
       background-color: #f9a825; color: black; font-weight: bold; cursor: pointer;
     }
-    button.agregar:hover { background-color: #d4af37; }
+    button.agregar:hover {
+      background-color: #d4af37;
+    }
     table {
       width: 100%; border-collapse: collapse; margin-top: 10px; color: #fff;
     }
     th, td {
       padding: 8px; border-bottom: 1px solid #ccc; text-align: left;
     }
+    ul {
+      list-style: disc inside;
+      color: white;
+      padding-left: 10px;
+    }
+    /* Login */
     #loginContainer {
       max-width: 350px;
       margin: 100px auto;
@@ -77,6 +99,11 @@
       width: 95%;
       font-size: 18px;
     }
+    /* Lista usuarios */
+    #listaUsuarios li {
+      margin: 5px 0;
+      font-size: 15px;
+    }
   </style>
 </head>
 <body>
@@ -95,23 +122,24 @@
   <h1>Gestión de Cuentas Streaming</h1>
 
   <div class="botonera">
-    <button id="btnCuentas" class="active" onclick="mostrarSeccion('cuentas', this)">Cuentas Vigentes</button>
+    <button id="btnVigentes" class="active" onclick="mostrarSeccion('vigentes', this)">Cuentas Vigentes</button>
     <button id="btnExpiran" onclick="mostrarSeccion('expiran', this)">Cuentas por Expirar</button>
     <button id="btnClientes" onclick="mostrarSeccion('clientes', this)">Clientes</button>
     <button id="btnProveedores" onclick="mostrarSeccion('proveedores', this)">Proveedores</button>
+    <button id="btnUsuarios" style="display:none;" onclick="mostrarSeccion('usuarios', this)">Usuarios</button>
   </div>
 
-  <section id="cuentas" class="active">
+  <section id="vigentes" class="active">
     <h2>Cuentas Vigentes</h2>
-    <input id="nombre" placeholder="Servicio" />
-    <input id="cliente_id" placeholder="Cliente ID" />
+    <input id="servicio" placeholder="Servicio" />
+    <input id="cliente" placeholder="Cliente" />
     <input type="date" id="vencimiento" />
-    <input id="correo" placeholder="Correo" />
-    <input id="contrasena" placeholder="Contraseña" />
+    <input id="mail" placeholder="Mail" />
+    <input id="pass" placeholder="Contraseña" />
     <button class="agregar" onclick="agregarCuenta()">Agregar Cuenta</button>
 
     <table id="tablaCuentas">
-      <thead><tr><th>Servicio</th><th>Cliente ID</th><th>Vence</th><th>Correo</th><th>Contraseña</th></tr></thead>
+      <thead><tr><th>Servicio</th><th>Cliente</th><th>Vence</th><th>Mail</th><th>Contraseña</th></tr></thead>
       <tbody></tbody>
     </table>
   </section>
@@ -119,7 +147,7 @@
   <section id="expiran">
     <h2>Cuentas por Expirar (Próximos 5 días)</h2>
     <table id="tablaExpiran">
-      <thead><tr><th>Servicio</th><th>Cliente ID</th><th>Vence</th><th>Correo</th><th>Contraseña</th></tr></thead>
+      <thead><tr><th>Servicio</th><th>Cliente</th><th>Vence</th><th>Mail</th><th>Contraseña</th></tr></thead>
       <tbody></tbody>
     </table>
   </section>
@@ -133,239 +161,314 @@
     <h2>Proveedores</h2>
     <input id="provNombre" placeholder="Nombre" />
     <input id="provServicio" placeholder="Servicio" />
-    <textarea id="provNota" placeholder="Nota"></textarea>
+    <textarea id="provNota" rows="3" placeholder="Nota"></textarea>
     <button class="agregar" onclick="agregarProveedor()">Agregar Proveedor</button>
 
-    <table id="tablaProveedores">
+    <table id="tablaProveedores" style="margin-top:15px;">
       <thead><tr><th>Nombre</th><th>Servicio</th><th>Nota</th></tr></thead>
       <tbody></tbody>
     </table>
   </section>
 
+  <section id="usuarios">
+    <h2>Usuarios (Solo Admin)</h2>
+    <input id="nuevoUser" placeholder="Nuevo Usuario" />
+    <input id="nuevoPass" type="password" placeholder="Contraseña" />
+    <select id="nuevoRol">
+      <option value="usuario">Usuario</option>
+      <option value="admin" id="optAdminRol">Administrador</option>
+    </select>
+    <button class="agregar" onclick="crearUsuario()">Crear Usuario</button>
+
+    <h3>Usuarios registrados:</h3>
+    <ul id="listaUsuarios"></ul>
+  </section>
+
 </div>
 
 <script>
-  // Inicializar Supabase
+  // Conexión Supabase
   const supabase = supabase.createClient(
     'https://fkcnhfgzfrqhyhprksji.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrY25oZmd6ZnJxaHlocHJrc2ppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NjMwODMsImV4cCI6MjA2ODQzOTA4M30.M_CPiBiCVjR5WeZ3iKKI3gwEJZ3CHTOeQteXZB627aM'
   );
 
   let usuarioLogeado = null;
+  let rolLogeado = null;
 
-  // Mostrar sección activa
-  function mostrarSeccion(id, boton) {
-    document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('.botonera button').forEach(b => b.classList.remove('active'));
-    if(boton) boton.classList.add('active');
-  }
-
-  // Login: consulta la tabla usuarios en Supabase
+  // LOGIN
   async function login() {
-    const user = document.getElementById('loginUser').value.trim();
+    const user = document.getElementById('loginUser').value.trim().toLowerCase();
     const pass = document.getElementById('loginPass').value;
 
-    if (!user || !pass) {
+    if(!user || !pass){
       alert('Completa usuario y contraseña');
       return;
     }
 
+    // Consulto usuario en Supabase
     const { data, error } = await supabase
       .from('usuarios')
-      .select('id, usuario, contraseña, rol')
+      .select('usuario, contraseña, rol')
       .eq('usuario', user)
       .eq('contraseña', pass)
-      .limit(1)
       .maybeSingle();
 
-    if (error) {
-      alert('Error al consultar usuarios: ' + error.message);
+    if(error){
+      alert('Error en login: ' + error.message);
       return;
     }
 
-    if (!data) {
+    if(!data){
       alert('Usuario o contraseña incorrectos');
       return;
     }
 
-    // Login exitoso
     usuarioLogeado = data.usuario;
-    localStorage.setItem('usuarioLogeado', usuarioLogeado);
-    localStorage.setItem('rolLogeado', data.rol);
+    rolLogeado = data.rol;
 
+    // Mostrar UI
     document.getElementById('loginContainer').style.display = 'none';
     document.getElementById('app').style.display = 'block';
 
-    cargarTodo();
+    if(rolLogeado === 'admin'){
+      document.getElementById('btnUsuarios').style.display = 'inline-block';
+      document.getElementById('optAdminRol').style.display = (usuarioLogeado === 'admin') ? 'block' : 'none';
+    } else {
+      document.getElementById('btnUsuarios').style.display = 'none';
+    }
+
+    actualizarTodo();
   }
 
-  // Al cargar la página, chequea si ya hay sesión guardada
-  window.onload = () => {
-    const sesion = localStorage.getItem('usuarioLogeado');
-    if (sesion) {
-      usuarioLogeado = sesion;
-      document.getElementById('loginContainer').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      cargarTodo();
-    }
-  };
+  // Mostrar sección activa
+  function mostrarSeccion(id, boton) {
+    document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.botonera button').forEach(btn => btn.classList.remove('active'));
+    if(boton) boton.classList.add('active');
+  }
 
-  // Funciones para cargar datos y mostrar en tablas / listas
+  // --- FUNCIONES PARA OBTENER Y GUARDAR DATOS DESDE SUPABASE ---
 
-  async function cargarCuentas() {
-    const { data, error } = await supabase.from('cuentas').select('*').order('vencimiento', { ascending: true });
-    if (error) {
+  async function obtenerCuentas(){
+    const { data, error } = await supabase
+      .from('cuentas')
+      .select('*')
+      .eq('usuario', usuarioLogeado)
+      .order('vencimiento', { ascending: true });
+    if(error){
       alert('Error al cargar cuentas: ' + error.message);
+      return [];
+    }
+    return data || [];
+  }
+
+  async function guardarCuenta(cuenta) {
+    const { error } = await supabase
+      .from('cuentas')
+      .insert([{ ...cuenta, usuario: usuarioLogeado }]);
+    if(error){
+      alert('Error al agregar cuenta: ' + error.message);
+      return false;
+    }
+    return true;
+  }
+
+  async function obtenerProveedores(){
+    const { data, error } = await supabase
+      .from('proveedores')
+      .select('*')
+      .eq('usuario', usuarioLogeado)
+      .order('nombre');
+    if(error){
+      alert('Error al cargar proveedores: ' + error.message);
+      return [];
+    }
+    return data || [];
+  }
+
+  async function guardarProveedor(proveedor){
+    const { error } = await supabase
+      .from('proveedores')
+      .insert([{ ...proveedor, usuario: usuarioLogeado }]);
+    if(error){
+      alert('Error al agregar proveedor: ' + error.message);
+      return false;
+    }
+    return true;
+  }
+
+  async function obtenerUsuarios(){
+    if(rolLogeado !== 'admin') return [];
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('usuario, rol')
+      .order('usuario');
+    if(error){
+      alert('Error al cargar usuarios: ' + error.message);
+      return [];
+    }
+    return data || [];
+  }
+
+  async function crearUsuarioSupabase(usuario, contraseña, rol) {
+    if(rolLogeado !== 'admin') {
+      alert('Solo administradores pueden crear usuarios.');
+      return false;
+    }
+    if(rol === 'admin' && usuarioLogeado !== 'admin'){
+      alert('Solo el administrador principal puede crear otro administrador.');
+      return false;
+    }
+    const { data: existing, error: errExist } = await supabase
+      .from('usuarios')
+      .select('usuario')
+      .eq('usuario', usuario)
+      .maybeSingle();
+    if(errExist){
+      alert('Error verificando usuario: ' + errExist.message);
+      return false;
+    }
+    if(existing){
+      alert('El usuario ya existe.');
+      return false;
+    }
+    const { error } = await supabase
+      .from('usuarios')
+      .insert([{ usuario, contraseña, rol }]);
+    if(error){
+      alert('Error creando usuario: ' + error.message);
+      return false;
+    }
+    return true;
+  }
+
+  // --- RENDER ---
+
+  const tablaCuentasBody = document.querySelector('#tablaCuentas tbody');
+  const listaClientes = document.getElementById('listaClientes');
+  const tablaExpiranBody = document.querySelector('#tablaExpiran tbody');
+  const listaUsuarios = document.getElementById('listaUsuarios');
+  const tablaProveedoresBody = document.querySelector('#tablaProveedores tbody');
+
+  async function renderCuentas(){
+    const cuentas = await obtenerCuentas();
+    tablaCuentasBody.innerHTML = '';
+    if(cuentas.length === 0){
+      tablaCuentasBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay cuentas vigentes</td></tr>`;
       return;
     }
-    const tbody = document.querySelector('#tablaCuentas tbody');
-    tbody.innerHTML = '';
-    data.forEach(c => {
-      tbody.innerHTML += `<tr>
-        <td>${c.nombre}</td>
-        <td>${c.cliente_id}</td>
+    cuentas.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.servicio}</td>
+        <td>${c.cliente}</td>
         <td>${c.vencimiento}</td>
-        <td>${c.correo}</td>
-        <td>${c.contrasena}</td>
-      </tr>`;
+        <td>${c.mail}</td>
+        <td>${c.pass}</td>
+      `;
+      tablaCuentasBody.appendChild(tr);
     });
   }
 
-  async function cargarExpiran() {
-    const hoy = new Date();
-    const cincoDias = new Date();
-    cincoDias.setDate(hoy.getDate() + 5);
-    // Supabase no tiene operadores directos para fechas en el cliente, se filtra en JS
-    const { data, error } = await supabase.from('cuentas').select('*');
-    if (error) {
-      alert('Error al cargar cuentas por expirar: ' + error.message);
+  async function renderClientes(){
+    const cuentas = await obtenerCuentas();
+    const clientesUnicos = [...new Set(cuentas.map(c => c.cliente.trim()).filter(c => c !== ''))].sort();
+    listaClientes.innerHTML = '';
+    if(clientesUnicos.length === 0){
+      listaClientes.innerHTML = '<li>No hay clientes.</li>';
       return;
     }
-    const expiran = data.filter(c => {
+    clientesUnicos.forEach(c => {
+      const li = document.createElement('li');
+      li.textContent = c;
+      listaClientes.appendChild(li);
+    });
+  }
+
+  async function renderExpiran(){
+    const cuentas = await obtenerCuentas();
+    const hoy = new Date();
+    tablaExpiranBody.innerHTML = '';
+
+    const expiran = cuentas.filter(c => {
       const ven = new Date(c.vencimiento);
-      return ven >= hoy && ven <= cincoDias;
+      const diff = (ven - hoy) / (1000 * 60 * 60 * 24);
+      return diff >= 0 && diff <= 5;
     });
 
-    const tbody = document.querySelector('#tablaExpiran tbody');
-    tbody.innerHTML = '';
-    if (expiran.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay cuentas por expirar en 5 días</td></tr>`;
+    if(expiran.length === 0){
+      tablaExpiranBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay cuentas por expirar en 5 días</td></tr>`;
       return;
     }
 
     expiran.forEach(c => {
-      tbody.innerHTML += `<tr>
-        <td>${c.nombre}</td>
-        <td>${c.cliente_id}</td>
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.servicio}</td>
+        <td>${c.cliente}</td>
         <td>${c.vencimiento}</td>
-        <td>${c.correo}</td>
-        <td>${c.contrasena}</td>
-      </tr>`;
+        <td>${c.mail}</td>
+        <td>${c.pass}</td>
+      `;
+      tablaExpiranBody.appendChild(tr);
     });
   }
 
-  async function cargarClientes() {
-    const { data, error } = await supabase.from('clientes').select('*').order('nombre');
-    if (error) {
-      alert('Error al cargar clientes: ' + error.message);
+  async function renderProveedores(){
+    const proveedores = await obtenerProveedores();
+    tablaProveedoresBody.innerHTML = '';
+    if(proveedores.length === 0){
+      tablaProveedoresBody.innerHTML = `<tr><td colspan="3" style="text-align:center;">No hay proveedores agregados</td></tr>`;
       return;
     }
-    const ul = document.getElementById('listaClientes');
-    ul.innerHTML = '';
-    data.forEach(c => {
-      const li = document.createElement('li');
-      li.textContent = c.nombre;
-      ul.appendChild(li);
-    });
-  }
-
-  async function cargarProveedores() {
-    const { data, error } = await supabase.from('proveedores').select('*').order('nombre');
-    if (error) {
-      alert('Error al cargar proveedores: ' + error.message);
-      return;
-    }
-    const tbody = document.querySelector('#tablaProveedores tbody');
-    tbody.innerHTML = '';
-    data.forEach(p => {
-      tbody.innerHTML += `<tr>
+    proveedores.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
         <td>${p.nombre}</td>
         <td>${p.servicio}</td>
         <td>${p.nota}</td>
-      </tr>`;
+      `;
+      tablaProveedoresBody.appendChild(tr);
     });
   }
 
-  // Funciones para agregar datos
+  async function renderUsuarios(){
+    if(rolLogeado !== 'admin'){
+      listaUsuarios.innerHTML = '';
+      return;
+    }
+    const usuarios = await obtenerUsuarios();
+    listaUsuarios.innerHTML = '';
+    usuarios.forEach(u => {
+      let li = document.createElement('li');
+      li.textContent = `${u.usuario} (${u.rol})`;
+      listaUsuarios.appendChild(li);
+    });
+  }
 
-  async function agregarCuenta() {
-    const nombre = document.getElementById('nombre').value.trim();
-    const cliente_id = document.getElementById('cliente_id').value.trim();
+  // --- FUNCIONES AGREGAR ---
+
+  async function agregarCuenta(){
+    const servicio = document.getElementById('servicio').value.trim();
+    const cliente = document.getElementById('cliente').value.trim();
     const vencimiento = document.getElementById('vencimiento').value;
-    const correo = document.getElementById('correo').value.trim();
-    const contrasena = document.getElementById('contrasena').value.trim();
+    const mail = document.getElementById('mail').value.trim();
+    const pass = document.getElementById('pass').value.trim();
 
-    if (!nombre || !cliente_id || !vencimiento || !correo || !contrasena) {
-      alert('Completa todos los campos para agregar cuenta');
+    if(!servicio || !cliente || !vencimiento || !mail || !pass){
+      alert('Por favor, completa todos los campos');
       return;
     }
 
-    const { error } = await supabase.from('cuentas').insert([{ nombre, cliente_id, vencimiento, correo, contrasena }]);
-    if (error) {
-      alert('Error al agregar cuenta: ' + error.message);
-    } else {
-      alert('Cuenta agregada con éxito');
-      limpiarInputsCuenta();
-      cargarTodo();
-    }
-  }
-
-  async function agregarProveedor() {
-    const nombre = document.getElementById('provNombre').value.trim();
-    const servicio = document.getElementById('provServicio').value.trim();
-    const nota = document.getElementById('provNota').value.trim();
-
-    if (!nombre || !servicio) {
-      alert('Completa nombre y servicio para agregar proveedor');
-      return;
-    }
-
-    const { error } = await supabase.from('proveedores').insert([{ nombre, servicio, nota }]);
-    if (error) {
-      alert('Error al agregar proveedor: ' + error.message);
-    } else {
-      alert('Proveedor agregado con éxito');
-      limpiarInputsProveedor();
-      cargarTodo();
-    }
-  }
-
-  // Limpieza de inputs
-
-  function limpiarInputsCuenta() {
-    document.getElementById('nombre').value = '';
-    document.getElementById('cliente_id').value = '';
-    document.getElementById('vencimiento').value = '';
-    document.getElementById('correo').value = '';
-    document.getElementById('contrasena').value = '';
-  }
-
-  function limpiarInputsProveedor() {
-    document.getElementById('provNombre').value = '';
-    document.getElementById('provServicio').value = '';
-    document.getElementById('provNota').value = '';
-  }
-
-  // Cargar todo junto
-
-  async function cargarTodo() {
-    await cargarCuentas();
-    await cargarExpiran();
-    await cargarClientes();
-    await cargarProveedores();
-  }
-</script>
-
-</body>
-</html>
+    const ok = await guardarCuenta({ servicio, cliente, vencimiento, mail, pass });
+    if(ok){
+      // Limpiar inputs
+      document.getElementById('servicio').value = '';
+      document.getElementById('cliente').value = '';
+      document.getElementById('vencimiento').value = '';
+      document.getElementById('mail').value = '';
+      document.getElementById('pass').value = '';
+      actualizarTodo();
+      mostrarSeccion('vigentes', document.getElement
