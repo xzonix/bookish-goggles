@@ -1,474 +1,237 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Gestión Streaming con Login y Supabase</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <title>Gestor de Cuentas Streaming</title>
   <style>
     body {
-      margin: 0; font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #4a90e2, #9013fe);
-      background-size: cover;
-      background-position: center;
-      min-height: 100vh;
-      color: #fff;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #1e3c72, #2a5298);
+      color: white;
+    }
+
+    .login-container, .app-container {
+      display: none;
       padding: 20px;
-      transition: background-image 0.5s ease;
     }
-    .container {
-      background: rgba(0,0,0,0.8);
-      padding: 40px 30px;
-      border-radius: 12px;
-      max-width: 1000px;
-      margin: auto;
-      box-sizing: border-box;
+
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 100px;
     }
-    h1 { margin-top: 0; text-align: center;}
-    .botonera {
-      text-align: center;
+
+    input {
+      padding: 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
       margin-bottom: 20px;
     }
-    .botonera button {
-      background-color: #4a90e2;
-      border: none;
-      color: white;
-      padding: 10px 20px;
-      margin: 0 5px;
-      border-radius: 8px;
+
+    .tab {
+      background: #2a5298;
+      padding: 10px 15px;
+      border-radius: 5px;
       cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.3s ease;
     }
-    .botonera button:hover {
-      background-color: #357ABD;
+
+    .tab.active {
+      background: #4CAF50;
     }
-    .botonera button.active {
-      background-color: #f9a825;
-      color: black;
-      font-weight: bold;
-    }
-    section {
+
+    .tab-content {
       display: none;
-      margin-top: 15px;
     }
-    section.active {
+
+    .tab-content.active {
       display: block;
     }
-    input, button, textarea, select {
-      padding: 8px; margin: 5px; border-radius: 5px; border: none;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-    textarea {
-      resize: vertical;
-    }
-    button.agregar {
-      background-color: #f9a825; color: black; font-weight: bold; cursor: pointer;
-    }
-    button.agregar:hover {
-      background-color: #d4af37;
-    }
+
     table {
-      width: 100%; border-collapse: collapse; margin-top: 10px; color: #fff;
+      width: 100%;
+      background: white;
+      color: black;
+      border-collapse: collapse;
+      margin-top: 10px;
     }
+
     th, td {
-      padding: 8px; border-bottom: 1px solid #ccc; text-align: left;
+      padding: 8px;
+      border: 1px solid #ccc;
+      text-align: left;
     }
-    ul {
-      list-style: disc inside;
-      color: white;
-      padding-left: 10px;
-    }
-    /* Login */
-    #loginContainer {
-      max-width: 350px;
-      margin: 100px auto;
-      background: rgba(0,0,0,0.85);
-      padding: 30px;
-      border-radius: 15px;
-      box-sizing: border-box;
-      text-align: center;
-    }
-    #loginContainer input {
-      width: 90%;
-      margin-bottom: 15px;
-      font-size: 16px;
-      color: #000;
-    }
-    #loginContainer button {
-      width: 95%;
-      font-size: 18px;
-    }
-    /* Lista usuarios */
-    #listaUsuarios li {
-      margin: 5px 0;
-      font-size: 15px;
+
+    .logout {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: crimson;
     }
   </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="loginContainer">
+<div class="login-container" id="login">
   <h2>Iniciar Sesión</h2>
-  <input type="text" id="loginUser" placeholder="Usuario" autocomplete="username" />
-  <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password" />
-  <button onclick="login()">Entrar</button>
+  <input type="text" id="usuario" placeholder="Usuario">
+  <input type="password" id="contraseña" placeholder="Contraseña">
+  <button onclick="iniciarSesion()">Entrar</button>
+  <p id="loginError" style="color:red;"></p>
 </div>
 
-<!-- PANEL PRINCIPAL -->
-<div id="app" class="container" style="display:none;">
-
-  <h1>Gestión de Cuentas Streaming</h1>
-
-  <div class="botonera">
-    <button id="btnVigentes" class="active" onclick="mostrarSeccion('vigentes', this)">Cuentas Vigentes</button>
-    <button id="btnExpiran" onclick="mostrarSeccion('expiran', this)">Cuentas por Expirar</button>
-    <button id="btnClientes" onclick="mostrarSeccion('clientes', this)">Clientes</button>
-    <button id="btnProveedores" onclick="mostrarSeccion('proveedores', this)">Proveedores</button>
-    <button id="btnUsuarios" style="display:none;" onclick="mostrarSeccion('usuarios', this)">Usuarios</button>
+<div class="app-container" id="app">
+  <button class="logout" onclick="cerrarSesion()">Cerrar sesión</button>
+  <div class="tabs">
+    <div class="tab active" onclick="mostrarTab('cuentas')">Cuentas Vigentes</div>
+    <div class="tab" onclick="mostrarTab('expirar')">Cuentas por Expirar</div>
+    <div class="tab" onclick="mostrarTab('clientes')">Clientes</div>
+    <div class="tab" onclick="mostrarTab('proveedores')">Proveedores</div>
+    <div class="tab" onclick="mostrarTab('usuarios')" id="tabUsuarios" style="display:none;">Usuarios</div>
   </div>
 
-  <section id="vigentes" class="active">
-    <h2>Cuentas Vigentes</h2>
-    <input id="servicio" placeholder="Servicio" />
-    <input id="cliente" placeholder="Cliente" />
-    <input type="date" id="vencimiento" />
-    <input id="mail" placeholder="Mail" />
-    <input id="pass" placeholder="Contraseña" />
-    <button class="agregar" onclick="agregarCuenta()">Agregar Cuenta</button>
+  <div class="tab-content active" id="cuentas">
+    <h3>Cuentas Vigentes</h3>
+    <table id="tablaCuentas"><thead><tr><th>Nombre</th><th>Correo</th><th>Contraseña</th><th>Vencimiento</th><th>Cliente</th></tr></thead><tbody></tbody></table>
+    <button onclick="agregarFila('tablaCuentas')">Agregar Cuenta</button>
+  </div>
 
-    <table id="tablaCuentas">
-      <thead><tr><th>Servicio</th><th>Cliente</th><th>Vence</th><th>Mail</th><th>Contraseña</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </section>
+  <div class="tab-content" id="expirar">
+    <h3>Cuentas por Expirar</h3>
+    <table id="tablaExpirar"><thead><tr><th>Nombre</th><th>Correo</th><th>Contraseña</th><th>Vencimiento</th><th>Cliente</th></tr></thead><tbody></tbody></table>
+    <button onclick="agregarFila('tablaExpirar')">Agregar</button>
+  </div>
 
-  <section id="expiran">
-    <h2>Cuentas por Expirar (Próximos 5 días)</h2>
-    <table id="tablaExpiran">
-      <thead><tr><th>Servicio</th><th>Cliente</th><th>Vence</th><th>Mail</th><th>Contraseña</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </section>
+  <div class="tab-content" id="clientes">
+    <h3>Clientes</h3>
+    <table id="tablaClientes"><thead><tr><th>ID</th><th>Nombre</th></tr></thead><tbody></tbody></table>
+    <button onclick="agregarFila('tablaClientes')">Agregar</button>
+  </div>
 
-  <section id="clientes">
-    <h2>Clientes</h2>
-    <ul id="listaClientes"></ul>
-  </section>
+  <div class="tab-content" id="proveedores">
+    <h3>Proveedores</h3>
+    <table id="tablaProveedores"><thead><tr><th>ID</th><th>Nombre</th><th>Servicio</th><th>Nota</th></tr></thead><tbody></tbody></table>
+    <button onclick="agregarFila('tablaProveedores')">Agregar</button>
+  </div>
 
-  <section id="proveedores">
-    <h2>Proveedores</h2>
-    <input id="provNombre" placeholder="Nombre" />
-    <input id="provServicio" placeholder="Servicio" />
-    <textarea id="provNota" rows="3" placeholder="Nota"></textarea>
-    <button class="agregar" onclick="agregarProveedor()">Agregar Proveedor</button>
-
-    <table id="tablaProveedores" style="margin-top:15px;">
-      <thead><tr><th>Nombre</th><th>Servicio</th><th>Nota</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </section>
-
-  <section id="usuarios">
-    <h2>Usuarios (Solo Admin)</h2>
-    <input id="nuevoUser" placeholder="Nuevo Usuario" />
-    <input id="nuevoPass" type="password" placeholder="Contraseña" />
-    <select id="nuevoRol">
-      <option value="usuario">Usuario</option>
-      <option value="admin" id="optAdminRol">Administrador</option>
-    </select>
-    <button class="agregar" onclick="crearUsuario()">Crear Usuario</button>
-
-    <h3>Usuarios registrados:</h3>
-    <ul id="listaUsuarios"></ul>
-  </section>
-
+  <div class="tab-content" id="usuarios">
+    <h3>Usuarios</h3>
+    <table id="tablaUsuarios"><thead><tr><th>Usuario</th><th>Contraseña</th><th>Rol</th></tr></thead><tbody></tbody></table>
+    <button onclick="agregarFila('tablaUsuarios')">Agregar</button>
+  </div>
 </div>
 
 <script>
-  // Conexión Supabase
-  const supabase = supabase.createClient(
-    'https://fkcnhfgzfrqhyhprksji.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrY25oZmd6ZnJxaHlocHJrc2ppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NjMwODMsImV4cCI6MjA2ODQzOTA4M30.M_CPiBiCVjR5WeZ3iKKI3gwEJZ3CHTOeQteXZB627aM'
-  );
+  const usuarios = [
+    { usuario: "admin", contraseña: "admin123", rol: "admin" },
+    { usuario: "invitado", contraseña: "1234", rol: "usuario" }
+  ];
 
-  let usuarioLogeado = null;
-  let rolLogeado = null;
-
-  // LOGIN
-  async function login() {
-    const user = document.getElementById('loginUser').value.trim().toLowerCase();
-    const pass = document.getElementById('loginPass').value;
-
-    if(!user || !pass){
-      alert('Completa usuario y contraseña');
-      return;
-    }
-
-    // Consulto usuario en Supabase
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('usuario, contraseña, rol')
-      .eq('usuario', user)
-      .eq('contraseña', pass)
-      .maybeSingle();
-
-    if(error){
-      alert('Error en login: ' + error.message);
-      return;
-    }
-
-    if(!data){
-      alert('Usuario o contraseña incorrectos');
-      return;
-    }
-
-    usuarioLogeado = data.usuario;
-    rolLogeado = data.rol;
-
-    // Mostrar UI
-    document.getElementById('loginContainer').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-
-    if(rolLogeado === 'admin'){
-      document.getElementById('btnUsuarios').style.display = 'inline-block';
-      document.getElementById('optAdminRol').style.display = (usuarioLogeado === 'admin') ? 'block' : 'none';
+  function iniciarSesion() {
+    const u = document.getElementById("usuario").value.trim();
+    const c = document.getElementById("contraseña").value.trim();
+    const user = usuarios.find(x => x.usuario === u && x.contraseña === c);
+    if (user) {
+      localStorage.setItem("sesion", JSON.stringify(user));
+      mostrarApp();
     } else {
-      document.getElementById('btnUsuarios').style.display = 'none';
+      document.getElementById("loginError").innerText = "Credenciales inválidas";
     }
-
-    actualizarTodo();
   }
 
-  // Mostrar sección activa
-  function mostrarSeccion(id, boton) {
-    document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('.botonera button').forEach(btn => btn.classList.remove('active'));
-    if(boton) boton.classList.add('active');
+  function cerrarSesion() {
+    localStorage.removeItem("sesion");
+    location.reload();
   }
 
-  // --- FUNCIONES PARA OBTENER Y GUARDAR DATOS DESDE SUPABASE ---
-
-  async function obtenerCuentas(){
-    const { data, error } = await supabase
-      .from('cuentas')
-      .select('*')
-      .eq('usuario', usuarioLogeado)
-      .order('vencimiento', { ascending: true });
-    if(error){
-      alert('Error al cargar cuentas: ' + error.message);
-      return [];
+  function mostrarApp() {
+    const user = JSON.parse(localStorage.getItem("sesion"));
+    if (!user) return;
+    document.getElementById("login").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    if (user.rol === "admin") {
+      document.getElementById("tabUsuarios").style.display = "block";
     }
-    return data || [];
+    cargarDatos();
   }
 
-  async function guardarCuenta(cuenta) {
-    const { error } = await supabase
-      .from('cuentas')
-      .insert([{ ...cuenta, usuario: usuarioLogeado }]);
-    if(error){
-      alert('Error al agregar cuenta: ' + error.message);
-      return false;
-    }
-    return true;
+  function mostrarTab(tab) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    document.querySelector(`.tab[onclick*="${tab}"]`).classList.add("active");
+    document.getElementById(tab).classList.add("active");
   }
 
-  async function obtenerProveedores(){
-    const { data, error } = await supabase
-      .from('proveedores')
-      .select('*')
-      .eq('usuario', usuarioLogeado)
-      .order('nombre');
-    if(error){
-      alert('Error al cargar proveedores: ' + error.message);
-      return [];
+  function agregarFila(tablaId) {
+    const tbody = document.getElementById(tablaId).querySelector("tbody");
+    const tr = document.createElement("tr");
+    const columnas = document.getElementById(tablaId).querySelectorAll("thead th").length;
+    for (let i = 0; i < columnas; i++) {
+      const td = document.createElement("td");
+      td.contentEditable = true;
+      tr.appendChild(td);
     }
-    return data || [];
+    tbody.appendChild(tr);
+    guardarDatos();
   }
 
-  async function guardarProveedor(proveedor){
-    const { error } = await supabase
-      .from('proveedores')
-      .insert([{ ...proveedor, usuario: usuarioLogeado }]);
-    if(error){
-      alert('Error al agregar proveedor: ' + error.message);
-      return false;
-    }
-    return true;
-  }
-
-  async function obtenerUsuarios(){
-    if(rolLogeado !== 'admin') return [];
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('usuario, rol')
-      .order('usuario');
-    if(error){
-      alert('Error al cargar usuarios: ' + error.message);
-      return [];
-    }
-    return data || [];
-  }
-
-  async function crearUsuarioSupabase(usuario, contraseña, rol) {
-    if(rolLogeado !== 'admin') {
-      alert('Solo administradores pueden crear usuarios.');
-      return false;
-    }
-    if(rol === 'admin' && usuarioLogeado !== 'admin'){
-      alert('Solo el administrador principal puede crear otro administrador.');
-      return false;
-    }
-    const { data: existing, error: errExist } = await supabase
-      .from('usuarios')
-      .select('usuario')
-      .eq('usuario', usuario)
-      .maybeSingle();
-    if(errExist){
-      alert('Error verificando usuario: ' + errExist.message);
-      return false;
-    }
-    if(existing){
-      alert('El usuario ya existe.');
-      return false;
-    }
-    const { error } = await supabase
-      .from('usuarios')
-      .insert([{ usuario, contraseña, rol }]);
-    if(error){
-      alert('Error creando usuario: ' + error.message);
-      return false;
-    }
-    return true;
-  }
-
-  // --- RENDER ---
-
-  const tablaCuentasBody = document.querySelector('#tablaCuentas tbody');
-  const listaClientes = document.getElementById('listaClientes');
-  const tablaExpiranBody = document.querySelector('#tablaExpiran tbody');
-  const listaUsuarios = document.getElementById('listaUsuarios');
-  const tablaProveedoresBody = document.querySelector('#tablaProveedores tbody');
-
-  async function renderCuentas(){
-    const cuentas = await obtenerCuentas();
-    tablaCuentasBody.innerHTML = '';
-    if(cuentas.length === 0){
-      tablaCuentasBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay cuentas vigentes</td></tr>`;
-      return;
-    }
-    cuentas.forEach(c => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${c.servicio}</td>
-        <td>${c.cliente}</td>
-        <td>${c.vencimiento}</td>
-        <td>${c.mail}</td>
-        <td>${c.pass}</td>
-      `;
-      tablaCuentasBody.appendChild(tr);
+  function guardarDatos() {
+    ["tablaCuentas", "tablaExpirar", "tablaClientes", "tablaProveedores", "tablaUsuarios"].forEach(id => {
+      const datos = [];
+      const filas = document.getElementById(id).querySelectorAll("tbody tr");
+      filas.forEach(fila => {
+        const celdas = fila.querySelectorAll("td");
+        const filaData = Array.from(celdas).map(td => td.innerText.trim());
+        datos.push(filaData);
+      });
+      localStorage.setItem(id, JSON.stringify(datos));
     });
   }
 
-  async function renderClientes(){
-    const cuentas = await obtenerCuentas();
-    const clientesUnicos = [...new Set(cuentas.map(c => c.cliente.trim()).filter(c => c !== ''))].sort();
-    listaClientes.innerHTML = '';
-    if(clientesUnicos.length === 0){
-      listaClientes.innerHTML = '<li>No hay clientes.</li>';
-      return;
-    }
-    clientesUnicos.forEach(c => {
-      const li = document.createElement('li');
-      li.textContent = c;
-      listaClientes.appendChild(li);
+  function cargarDatos() {
+    ["tablaCuentas", "tablaExpirar", "tablaClientes", "tablaProveedores", "tablaUsuarios"].forEach(id => {
+      const datos = JSON.parse(localStorage.getItem(id) || "[]");
+      const tbody = document.getElementById(id).querySelector("tbody");
+      tbody.innerHTML = "";
+      datos.forEach(filaData => {
+        const tr = document.createElement("tr");
+        filaData.forEach(texto => {
+          const td = document.createElement("td");
+          td.contentEditable = true;
+          td.innerText = texto;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
     });
   }
 
-  async function renderExpiran(){
-    const cuentas = await obtenerCuentas();
-    const hoy = new Date();
-    tablaExpiranBody.innerHTML = '';
-
-    const expiran = cuentas.filter(c => {
-      const ven = new Date(c.vencimiento);
-      const diff = (ven - hoy) / (1000 * 60 * 60 * 24);
-      return diff >= 0 && diff <= 5;
-    });
-
-    if(expiran.length === 0){
-      tablaExpiranBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay cuentas por expirar en 5 días</td></tr>`;
-      return;
+  document.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem("sesion")) {
+      mostrarApp();
+    } else {
+      document.getElementById("login").style.display = "flex";
     }
+    setInterval(guardarDatos, 3000);
+  });
+</script>
 
-    expiran.forEach(c => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${c.servicio}</td>
-        <td>${c.cliente}</td>
-        <td>${c.vencimiento}</td>
-        <td>${c.mail}</td>
-        <td>${c.pass}</td>
-      `;
-      tablaExpiranBody.appendChild(tr);
-    });
-  }
-
-  async function renderProveedores(){
-    const proveedores = await obtenerProveedores();
-    tablaProveedoresBody.innerHTML = '';
-    if(proveedores.length === 0){
-      tablaProveedoresBody.innerHTML = `<tr><td colspan="3" style="text-align:center;">No hay proveedores agregados</td></tr>`;
-      return;
-    }
-    proveedores.forEach(p => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${p.nombre}</td>
-        <td>${p.servicio}</td>
-        <td>${p.nota}</td>
-      `;
-      tablaProveedoresBody.appendChild(tr);
-    });
-  }
-
-  async function renderUsuarios(){
-    if(rolLogeado !== 'admin'){
-      listaUsuarios.innerHTML = '';
-      return;
-    }
-    const usuarios = await obtenerUsuarios();
-    listaUsuarios.innerHTML = '';
-    usuarios.forEach(u => {
-      let li = document.createElement('li');
-      li.textContent = `${u.usuario} (${u.rol})`;
-      listaUsuarios.appendChild(li);
-    });
-  }
-
-  // --- FUNCIONES AGREGAR ---
-
-  async function agregarCuenta(){
-    const servicio = document.getElementById('servicio').value.trim();
-    const cliente = document.getElementById('cliente').value.trim();
-    const vencimiento = document.getElementById('vencimiento').value;
-    const mail = document.getElementById('mail').value.trim();
-    const pass = document.getElementById('pass').value.trim();
-
-    if(!servicio || !cliente || !vencimiento || !mail || !pass){
-      alert('Por favor, completa todos los campos');
-      return;
-    }
-
-    const ok = await guardarCuenta({ servicio, cliente, vencimiento, mail, pass });
-    if(ok){
-      // Limpiar inputs
-      document.getElementById('servicio').value = '';
-      document.getElementById('cliente').value = '';
-      document.getElementById('vencimiento').value = '';
-      document.getElementById('mail').value = '';
-      document.getElementById('pass').value = '';
-      actualizarTodo();
-      mostrarSeccion('vigentes', document.getElement
+</body>
+</html>
